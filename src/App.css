@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 0%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 10%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 10%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 5% 26%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 5% 26%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 240 5% 26%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 6% 20%;
+        --input: 240 6% 20%;
+        --ring: 217 91% 60%;
+        --radius: 0.5rem;
+    }
+}
+
+@layer base {
+    * {
+        border-color: hsl(var(--border));
+    }
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Input focus styles */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+}
+
+/* Custom slider styles */
+/* Custom slider styles */
+input[type="range"] {
+    appearance: none;
+    width: 100%;
+    height: 0.5rem;
+    background: #4b5563;  /* Plus visible */
+    border-radius: 0.5rem;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #3b82f6;  /* Bleu vif */
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 2px #1e3a8a;  /* Bordure pour plus de visibilité */
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #1e3a8a;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+    background: #2563eb;
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+    background: #2563eb;
+}
