@@ -43,9 +43,7 @@ type PatientPoint = {
   ci_upper?: number;
 };
 
-function clamp(n: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, n));
-}
+
 
 /**
  * ✅ Anti Recharts width/height(-1) :

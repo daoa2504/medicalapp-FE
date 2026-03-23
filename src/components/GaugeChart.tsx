@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import  { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface GaugeChartProps {
