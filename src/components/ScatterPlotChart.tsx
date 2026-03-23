@@ -9,7 +9,6 @@ import {
   Legend,
   ResponsiveContainer,
   Line,
-  
   ReferenceDot,
 } from 'recharts';
 import { ExtendedPredictionOutput, ReferenceSubject } from '../types';
@@ -18,16 +17,64 @@ import { formatNumber, formatNumberWithSign, formatInteger } from "../utils/numb
 interface ScatterPlotChartProps {
   results: ExtendedPredictionOutput;
 }
+type CustomStarProps = {
+  cx?: number;
+  cy?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+};
+
+const CustomStar = ({ cx = 0, cy = 0, fill, stroke, strokeWidth }: CustomStarProps) => {
+  const size = 12;
+
+  const points = `
+    ${cx},${cy - size}
+    ${cx + size * 0.3},${cy - size * 0.3}
+    ${cx + size},${cy - size * 0.3}
+    ${cx + size * 0.45},${cy + size * 0.15}
+    ${cx + size * 0.6},${cy + size}
+    ${cx},${cy + size * 0.45}
+    ${cx - size * 0.6},${cy + size}
+    ${cx - size * 0.45},${cy + size * 0.15}
+    ${cx - size},${cy - size * 0.3}
+    ${cx - size * 0.3},${cy - size * 0.3}
+  `;
+
+  return (
+    <polygon
+      points={points}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+    />
+  );
+};
+
 
 export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
   const [filters, setFilters] = useState({
-    ageGroup: 'all', // all, <60, 60-80, >80
-    sex: 'all', // all, 0, 1
-    education: 'all', // all, 0-4
-    diagnosis: 'all', // all, CON, MCI, AD, OTHER_DEM, SCD
+    ageGroup: 'all',
+    sex: 'all',
+    education: 'all',
+    diagnosis: 'all',
   });
 
-  // Filtrer les données de la cohorte de référence
+  // ✅ Vérifier nca_prediction
+  if (!results.nca_prediction) {
+    return (
+      <div className="p-4 bg-gray-800 rounded-lg text-center">
+        <p className="text-gray-400">Prédiction NCA non disponible</p>
+      </div>
+    );
+  }
+
+  // ✅ Données patient
+  const patientAge = results.nca_prediction.age_chronologique;
+  const patientNCA = results.nca_prediction.nca_predicted;
+  const patientDelta = results.nca_prediction.delta_nca;
+
+  // ✅ Filtrer la cohorte de référence
   const filteredCohort = (results.reference_cohort || []).filter((subject: ReferenceSubject) => {
     if (filters.ageGroup !== 'all') {
       if (filters.ageGroup === '<60' && subject.age >= 60) return false;
@@ -40,20 +87,27 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
     return true;
   });
 
-  // Préparer les données pour le scatter plot
-  const scatterData = filteredCohort.map((subject: ReferenceSubject) => ({
-    age: subject.age,
-    nca: subject.neurocog_age_flu_weight,
-    diagnosis: subject.dementia_dx_code,
-  }));
+  // ✅ Préparer données pour scatter (avec nettoyage)
+  const scatterData = filteredCohort
+    .filter((subject: ReferenceSubject) => {
+      // Filtrer les valeurs invalides
+      const age = Number(subject.age);
+      const nca = Number(subject.neurocog_age_flu_weight);
+      return !isNaN(age) && !isNaN(nca) && age > 0 && nca > 0;
+    })
+    .map((subject: ReferenceSubject) => ({
+      age: Number(subject.age),
+      nca: Number(subject.neurocog_age_flu_weight),
+      diagnosis: subject.dementia_dx_code,
+    }));
 
-  // Point du patient
+  // ✅ Point patient (EN BLEU maintenant !)
   const patientPoint = {
-    age: results.age,
-    nca: results.neurocog_age_flu_weight,
+    age: Number(patientAge),
+    nca: Number(patientNCA),
   };
 
-  // Couleurs par diagnostic
+  // ✅ Couleurs par diagnostic
   const diagnosisColors: Record<string, string> = {
     CON: '#22c55e',      // Vert
     SCD: '#84cc16',      // Vert-jaune
@@ -117,13 +171,17 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
             className="bg-gray-700 text-white px-3 py-1 rounded text-sm"
           >
             <option value="all">Tous niveaux</option>
-            <option value="0">Pré-primaire</option>
-            <option value="1">Primaire</option>
-            <option value="2">Secondaire inf.</option>
-            <option value="3">Secondaire sup.</option>
-            <option value="4">Universitaire</option>
+            <option value="0">Secondaire (ou Inférieur au DES)</option>
+            <option value="1">Collégial / Technique</option>
+            <option value="2">Universitaire (1er cycle)</option>
+            <option value="3">Universitaire (cycles supérieurs)</option>
           </select>
         </div>
+      </div>
+
+      {/* Info : nombre de points affichés */}
+      <div className="text-sm text-gray-400 text-center">
+        Affichage de {scatterData.length} participants sur {results.reference_cohort?.length || 0}
       </div>
 
       {/* Graphique */}
@@ -193,7 +251,7 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
           <Line
             type="monotone"
             dataKey="age"
-            data={[{ age: 40 }, { age: 100 }]}
+            data={[{ age: 40, nca: 40 }, { age: 100, nca: 100 }]}
             stroke="#6b7280"
             strokeWidth={2}
             strokeDasharray="5 5"
@@ -201,7 +259,7 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
             name="Ligne de référence (âge = NCA)"
           />
 
-          {/* Points de la cohorte par diagnostic */}
+          {/* ✅ Points de la cohorte par diagnostic */}
           {Object.keys(diagnosisColors).map((dx) => {
             const dxData = scatterData.filter((d: any) => d.diagnosis === dx);
             if (dxData.length === 0) return null;
@@ -213,26 +271,24 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
                 data={dxData}
                 fill={diagnosisColors[dx]}
                 opacity={0.6}
+                isAnimationActive={false}
               />
             );
           })}
+          
 
-          {/* Point du patient */}
+          {/* ✅ Point du patient - EN BLEU ! */}
           <Scatter
             name="Patient actuel"
             data={[patientPoint]}
-            fill="#f97316"
-            shape="star"
-          >
-            <ReferenceDot
-              x={patientPoint.age}
-              y={patientPoint.nca}
-              r={10}
-              fill="#f97316"
-              stroke="#fff"
-              strokeWidth={3}
-            />
-          </Scatter>
+            fill="#3b82f6"
+            
+            stroke="#fff"      // Contour blanc
+            shape={(props) => <CustomStar {...props} />}
+            strokeWidth={1}
+            
+            isAnimationActive={false}
+          />
         </ScatterChart>
       </ResponsiveContainer>
 
@@ -259,33 +315,45 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
           <span className="text-gray-400">OTHER - Autres démences</span>
         </div>
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
           </svg>
           <span className="text-gray-400">Votre patient</span>
         </div>
       </div>
 
-      {/* Informations patient - ✅ CORRIGÉ */}
+      {/* Informations patient */}
       <div className="mt-4 p-4 bg-gray-800 rounded-lg">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-sm text-gray-400">Âge chronologique</p>
-            <p className="text-2xl font-bold text-white">{results.age} ans</p>
+            <p className="text-2xl font-bold text-white">{formatInteger(patientAge)} ans</p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Âge neurocognitif</p>
-            <p className="text-2xl font-bold text-orange-500">
-              {formatNumber(results.neurocog_age_flu_weight, 1)} ans
+            <p className="text-2xl font-bold text-blue-500">
+              {formatNumber(patientNCA, 1)} ans
             </p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Delta NCA</p>
-            <p className="text-2xl font-bold text-orange-500">
-              {formatNumberWithSign(results.delta_neurocogage_flu_weight, 1)} ans
+            <p className="text-2xl font-bold text-blue-500">
+              {formatNumberWithSign(patientDelta, 1)} ans
             </p>
           </div>
         </div>
+        
+        {/* Fiabilité */}
+        {results.nca_prediction?.reliability && (
+          <div className="mt-3 text-center">
+            <p className="text-xs text-gray-400">
+              Fiabilité : {results.nca_prediction.reliability} {results.nca_prediction.reliability_stars}
+            </p>
+            <p className="text-xs text-gray-500">
+              {results.nca_prediction.features_used}/{results.nca_prediction.features_total} features utilisées
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

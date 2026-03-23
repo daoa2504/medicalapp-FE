@@ -28,7 +28,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
 
   // ✅ Remount key: force le montage du chart quand on change d'onglet
   const chartKey = useMemo(() => `chart-${activeTab}-${results?.identifier ?? "x"}`, [activeTab, results?.identifier]);
-
+  
   return (
     <div className="space-y-6">
       {/* Navigation */}
