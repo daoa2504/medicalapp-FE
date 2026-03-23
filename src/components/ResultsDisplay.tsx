@@ -11,7 +11,7 @@ import { ExplainableAI } from "./ExplainableAI";
 import { RiskFactorsPanel } from "./RiskFactorsPanel";
 import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
 import { GrowthCurveChart } from "./GrowthCurveChart";
-import { formatNumber, formatNumberWithSign, formatInteger } from "../utils/numberFormat";
+import { formatNumber, formatNumberWithSign } from "../utils/numberFormat";
 
 interface ResultsDisplayProps {
   results: ExtendedPredictionOutput;

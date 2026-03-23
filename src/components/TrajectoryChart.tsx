@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
   Area,
-  AreaChart,
+  
   ReferenceDot,
 } from 'recharts';
 import { ExtendedPredictionOutput } from '../types';

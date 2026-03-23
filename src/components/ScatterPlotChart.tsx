@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
   Line,
-  LineChart,
+  
   ReferenceDot,
 } from 'recharts';
 import { ExtendedPredictionOutput, ReferenceSubject } from '../types';

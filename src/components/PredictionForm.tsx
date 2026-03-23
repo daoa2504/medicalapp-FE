@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiService } from '../services/api';
-import { PredictionInput, PredictionOutput } from '../types';
+import { PredictionInput } from '../types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
