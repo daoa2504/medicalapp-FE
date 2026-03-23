@@ -488,3 +488,13 @@ export const FIELD_LABELS: Record<string, string> = {
   nutrition_score: 'Score nutritionnel',
   sleep_deprivation: 'Privation de sommeil',
 };
+export interface ModelsInfoResponse {
+    models: string[];
+    version?: string;
+}
+
+export interface ApiError {
+    error: string;
+    details?: string;
+    hint?: string;
+}

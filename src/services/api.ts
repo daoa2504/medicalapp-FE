@@ -6,17 +6,19 @@ import {
     ApiError,
 } from '../types';
 
-// Configuration de l'API
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+    throw new Error("VITE_API_URL n'est pas définie");
+}
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 30000, // 30 secondes
+    timeout: 30000,
 });
-
 /**
  * Service API pour les prédictions CogniScreen
  */
