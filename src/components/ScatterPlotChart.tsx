@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
   Line,
-  ReferenceDot,
+ 
 } from 'recharts';
 import { ExtendedPredictionOutput, ReferenceSubject } from '../types';
 import { formatNumber, formatNumberWithSign, formatInteger } from "../utils/numberFormat";
