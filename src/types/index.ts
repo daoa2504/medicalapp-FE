@@ -388,6 +388,8 @@ export interface ExtendedPredictionOutput extends PredictionOutput {
   
   // Écarts-types (optionnel)
   std_zones?: StdZones;
+
+  risk_scores?: RiskScores;
 }
  // ==================== MODULE NCA : PRÉDICTION AVEC GESTION NaN ====================
  
@@ -497,4 +499,9 @@ export interface ApiError {
     error: string;
     details?: string;
     hint?: string;
+}
+
+export interface RiskScores {
+  risk_dementia: number;
+  risk_handicap: number;
 }

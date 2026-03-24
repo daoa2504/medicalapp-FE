@@ -4,7 +4,7 @@ import { ExtendedPredictionOutput } from "../types";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { GaugeChart } from "./GaugeChart";
+
 import { ScatterPlotChart } from "./ScatterPlotChart";
 import { TrajectoryChart } from "./TrajectoryChart";
 import { ExplainableAI } from "./ExplainableAI";
@@ -12,7 +12,7 @@ import { RiskFactorsPanel } from "./RiskFactorsPanel";
 import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
 import { GrowthCurveChart } from "./GrowthCurveChart";
 import { formatNumber, formatNumberWithSign } from "../utils/numberFormat";
-
+import { RiskGauges } from '@/components/RiskGauges';
 interface ResultsDisplayProps {
   results: ExtendedPredictionOutput;
   onBack: () => void;
@@ -21,8 +21,10 @@ interface ResultsDisplayProps {
 type TabKey = "position" | "trajectory" | "percentiles" | "centiles";
 
 export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
+  console.log("RESULTS 👉", results);
   const [activeTab, setActiveTab] = useState<TabKey>("position");
-
+  
+   
   // Example calculation
   const healthEquityScore = 68;
 
@@ -194,7 +196,16 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
           </Card>
 
           {/* Gauges */}
-          <Card className="bg-gray-900 border-gray-800">
+          {/* ========== NOUVELLE SECTION : GAUGES DE RISQUE ========== */}
+      
+             {results.risk_scores && (
+                <RiskGauges
+                  riskDementia={results.risk_scores.risk_dementia * 100}
+                  riskHandicap={results.risk_scores.risk_handicap * 100}
+                />
+)}
+ 
+         {/*  <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-xl">Évaluation des Risques</CardTitle>
               <p className="text-sm text-gray-400">
@@ -214,7 +225,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* ========== NOUVEAU : RÉSULTATS NCA ========== */}
           {results.nca_prediction && (
