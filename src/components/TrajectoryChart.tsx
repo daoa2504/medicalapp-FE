@@ -1,8 +1,6 @@
-/**
- * TrajectoryChart.tsx - MIS À JOUR
- * Affiche les trajectoires longitudinales avec données réelles
- */
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExtendedPredictionOutput } from "../types";
+import { ExplainableAI } from "./ExplainableAI";
 import {
   LineChart,
   Line,
@@ -12,348 +10,255 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Area,
-  
   ReferenceDot,
-} from 'recharts';
-import { ExtendedPredictionOutput } from '../types';
+  ReferenceArea,
+} from "recharts";
 
-interface TrajectoryChartProps {
+interface TrajectoryModuleProps {
   results: ExtendedPredictionOutput;
 }
 
-export function TrajectoryChart({ results }: TrajectoryChartProps) {
-  console.log('=== DÉBOGAGE TRAJECTOIRE ===');
-  console.log('Current:', results.trajectory?.current);
-  console.log('Projected:', results.trajectory?.projected);
-  console.log('Annual decline:', results.trajectory?.annual_decline);
-  console.log('Historical:', results.trajectory?.historical?.slice(-3)); // 3 derniers points
-  console.log('============================');
-  // =========================================
-  
- 
-  
-  if (!results.trajectory) {
-    return <div className="text-gray-400">Données de trajectoire non disponibles</div>;
-  }
+export function TrajectoryChart({ results }: TrajectoryModuleProps) {
+  const currentAge = results.patient_age ?? results.nca_prediction?.age_chronologique ?? 65;
+  const currentNCA = results.nca_prediction?.nca_predicted ?? currentAge;
+  const deltaNCA = results.nca_prediction?.delta_nca ?? 0;
 
-  const { historical, current, projected, normative, example_trajectories } = results.trajectory;
+  const generateTrajectory = () => {
+    const data = [];
+    const yearsToProject = 10;
 
-  // Combiner toutes les trajectoires du patient
-  const allData = [
-    ...historical.map(p => ({
-      year: p.year,
-      delta_nca: p.delta_nca,
-      type: 'historical',
-    })),
-    {
-      year: current.year,
-      delta_nca: current.delta_nca,
-      type: 'current',
-    },
-    ...projected.map(p => ({
-      year: p.year,
-      delta_nca: p.delta_nca,
-      ci_lower: p.ci_lower,
-      ci_upper: p.ci_upper,
-      type: 'projected',
-    })),
-  ];
+    const currentRate = deltaNCA > 0 ? deltaNCA / 5 : 0.5;
+    const optimizedRate = currentRate * 0.4;
 
-  // Données normatives
-  const normativeData = normative.map(n => ({
-    year: n.year,
-    p25: n.p25,
-    p75: n.p75,
-    median: n.median,
-  }));
+    for (let i = 0; i <= yearsToProject; i++) {
+      const age = currentAge + i;
 
-  // Point actuel
-  const currentPoint = {
-    year: current.year,
-    delta_nca: current.delta_nca,
+      data.push({
+        age,
+        current: currentNCA + currentRate * i,
+        optimized: currentNCA + optimizedRate * i,
+        normal: age,
+      });
+    }
+
+    return data;
   };
 
-  // Couleurs pour les trajectoires d'exemple
-  const exampleColors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+  const trajectoryData = generateTrajectory();
+
+  const calculateHealthEquityScore = () => {
+    let score = 0;
+    let factorsCount = 0;
+
+    const socialFactors = {
+      living_alone: 1,
+      income: 0,
+      retired: 1,
+    };
+
+    if (socialFactors.living_alone === 1) {
+      score += 20;
+      factorsCount++;
+    }
+    if (socialFactors.income === 0) {
+      score += 25;
+      factorsCount++;
+    }
+    if (socialFactors.retired === 1) {
+      score += 15;
+      factorsCount++;
+    }
+
+    return factorsCount > 0
+      ? Math.round((score / factorsCount) * (100 / 60))
+      : 0;
+  };
+
+  const healthEquityScore = calculateHealthEquityScore();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Graphique principal */}
-      <ResponsiveContainer width="100%" height={450}>
-        <LineChart
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-        >
-          <defs>
-            <linearGradient id="normativeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#6b7280" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#6b7280" stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="ciGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#f97316" stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
-          
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          
-          <XAxis
-            dataKey="year"
-            type="number"
-            domain={['dataMin', 'dataMax']}
-            stroke="#9ca3af"
-            label={{ 
-              value: 'Années écoulées (0 = aujourd\'hui)', 
-              position: 'insideBottom', 
-              offset: -10,
-              fill: '#9ca3af' 
-            }}
-          />
-          
-          <YAxis
-            stroke="#9ca3af"
-            label={{ 
-              value: 'Delta NCA (vieillissement neurocognitif, années)', 
-              angle: -90, 
-              position: 'insideLeft',
-              fill: '#9ca3af'
-            }}
-          />
-          
- <Tooltip
-  contentStyle={{
-    backgroundColor: '#1f2937',
-    border: '1px solid #374151',
-    borderRadius: '8px',
-    color: '#fff'
-  }}
-  content={({ active, payload, label }) => {
-    if (!active || !payload || payload.length === 0) return null;
-    
-    // Chercher spécifiquement la ligne du patient (orange)
-    const patientData = payload.find(p => 
-      p.dataKey === 'delta_nca' && 
-      (p.stroke === '#f97316' || p.name?.includes('historique') || p.name?.includes('Projection'))
-    );
-    
-    // Si on trouve les données du patient
-    if (patientData && patientData.payload) {
-      const point = patientData.payload;
-      const value = point.delta_nca;
-      
-      return (
-        <div className="bg-gray-900 p-3 rounded-lg border border-gray-700">
-          <p className="text-sm font-semibold text-orange-400">
-            Année : {point.year > 0 ? '+' : ''}{point.year}
-          </p>
-          <p className="text-sm text-gray-300">
-            Delta NCA : {value?.toFixed(1) || 'N/A'} ans
-          </p>
-          {point.ci_lower !== undefined && point.ci_upper !== undefined && (
-            <p className="text-xs text-gray-400">
-              IC : [{point.ci_lower.toFixed(1)}, {point.ci_upper.toFixed(1)}]
-            </p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">Votre patient</p>
-        </div>
-      );
-    }
-    
-    // Sinon afficher toutes les valeurs disponibles
-    return (
-      <div className="bg-gray-900 p-3 rounded-lg border border-gray-700">
-        <p className="text-sm font-semibold mb-2">Année : {label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-xs" style={{ color: entry.color }}>
-            {entry.name}: {entry.value?.toFixed(1)} ans
-          </p>
-        ))}
-      </div>
-    );
-  }}
-/>     
-          <Legend
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="line"
-          />
+      <Card className="bg-gray-900 border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Trajectoire projetée sur 10 ans
+          </CardTitle>
+        </CardHeader>
 
-          {/* Zone normative (25ème-75ème percentile) */}
-          <Area
-            data={normativeData}
-            type="monotone"
-            dataKey="p75"
-            stroke="none"
-            fill="url(#normativeGradient)"
-            name="Zone normative (25°-75°)"
-          />
-          <Area
-            data={normativeData}
-            type="monotone"
-            dataKey="p25"
-            stroke="none"
-            fill="#000"
-            name=""
-          />
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={trajectoryData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
 
-          {/* Médiane de la population */}
-          <Line
-            data={normativeData}
-            type="monotone"
-            dataKey="median"
-            stroke="#6b7280"
-            strokeWidth={2}
-            strokeDasharray="5 5"
-            dot={false}
-            name="Médiane population"
-          />
-
-          {/* Intervalle de confiance de la projection */}
-          <Area
-            data={allData.filter(d => d.type === 'projected')}
-            type="monotone"
-            dataKey="ci_upper"
-            stroke="none"
-            fill="url(#ciGradient)"
-            name="Intervalle confiance"
-          />
-          <Area
-            data={allData.filter(d => d.type === 'projected')}
-            type="monotone"
-            dataKey="ci_lower"
-            stroke="none"
-            fill="#000"
-            name=""
-          />
-
-          {/* Trajectoires d'exemple (patients similaires réels) */}
-          {example_trajectories && example_trajectories.map((traj: any, idx: number) => {
-            const trajData = traj.points.map((p: any) => ({
-              year: p.year - current.year,  // Recentrer sur le présent
-              delta_nca: p.delta_nca
-            }));
-            
-            return (
-              <Line
-                key={`example-${idx}`}
-                data={trajData}
-                type="monotone"
-                dataKey="delta_nca"
-                stroke={exampleColors[idx % exampleColors.length]}
-                strokeWidth={1.5}
-                strokeOpacity={0.4}
-                dot={false}
-                name={`Patient ${traj.diagnosis} (réel)`}
+              <XAxis
+                dataKey="age"
+                label={{
+                  value: "Âge (années)",
+                  position: "insideBottom",
+                  offset: -5,
+                }}
+                stroke="#9CA3AF"
               />
-            );
-          })}
 
-          {/* Trajectoire historique du patient */}
-          <Line
-            data={allData.filter(d => d.type === 'historical' || d.type === 'current')}
-            type="monotone"
-            dataKey="delta_nca"
-            stroke="#f97316"
-            strokeWidth={3}
-            dot={false}
-            name="Trajectoire historique"
-          />
+              <YAxis
+                label={{
+                  value: "Âge neurocognitif (années)",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+                stroke="#9CA3AF"
+              />
 
-          {/* Trajectoire projetée */}
-          <Line
-            data={allData.filter(d => d.type === 'current' || d.type === 'projected')}
-            type="monotone"
-            dataKey="delta_nca"
-            stroke="#f97316"
-            strokeWidth={3}
-            strokeDasharray="5 5"
-            dot={false}
-            name="Projection 5 ans"
-          />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1F2937",
+                  border: "1px solid #374151",
+                  borderRadius: "8px",
+                }}
+                labelStyle={{ color: "#F3F4F6" }}
+              />
 
-          {/* Point actuel mis en évidence */}
-          <ReferenceDot
-            x={currentPoint.year}
-            y={currentPoint.delta_nca}
-            r={8}
-            fill="#f97316"
-            stroke="#fff"
-            strokeWidth={2}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+              <Legend />
 
-      {/* Informations sur la trajectoire */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-gray-800 rounded-lg">
-          <p className="text-xs text-gray-400 mb-1">Delta NCA actuel</p>
-          <p className="text-2xl font-bold text-orange-500">
-            {current.delta_nca > 0 ? '+' : ''}
-            {current.delta_nca.toFixed(1)} ans
-          </p>
-        </div>
-      <div className="p-4 bg-gray-800 rounded-lg">
-  <p className="text-xs text-gray-400 mb-1">Projection à 5 ans</p>
-  <p className="text-2xl font-bold text-orange-400">
-    {projected[projected.length - 1].delta_nca > 0 ? '+' : ''}
-    {projected[projected.length - 1].delta_nca.toFixed(1)} ans
-  </p>
-{(() => {
-  const lastProjected = projected[projected.length - 1];
-  return lastProjected.ci_lower !== undefined && lastProjected.ci_upper !== undefined ? (
-    <p className="text-xs text-gray-500 mt-1">
-      IC: {lastProjected.ci_lower.toFixed(1)} à {lastProjected.ci_upper.toFixed(1)}
-    </p>
-  ) : null;
-})()}
-</div>
-        
-        <div className="p-4 bg-gray-800 rounded-lg">
-          <p className="text-xs text-gray-400 mb-1">Taux de déclin</p>
-          <p className="text-2xl font-bold text-red-400">
-            +{results.trajectory.annual_decline.toFixed(2)} ans/an
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            ± {results.trajectory.decline_ci.toFixed(2)} ans/an
-          </p>
-        </div>
-      </div>
+              <ReferenceArea
+                y1={currentAge + 5}
+                y2={currentAge + 20}
+                fill="#EF4444"
+                fillOpacity={0.1}
+                label={{ value: "Zone à risque", position: "insideTopLeft" }}
+              />
 
-      {/* Message d'interprétation */}
-      <div className="p-4 bg-blue-900/20 border border-blue-900 rounded-lg">
-        <div className="flex items-start gap-3">
-          <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-400 font-semibold mb-1">
-              Interprétation basée sur {example_trajectories?.length || 0} patients similaires réels
-            </p>
-            <p className="text-sm text-blue-300">
-              La zone grisée représente le vieillissement neurocognitif normal (25ème-75ème percentile). 
-              Les lignes colorées fines montrent les trajectoires réelles de patients similaires dans la cohorte.
-              Le patient évolue actuellement{' '}
-              {current.delta_nca > (normative[Math.floor(normative.length / 2)]?.median || 0)
-                ? 'au-dessus' 
-                : 'en dessous'
-              } de la médiane de la population.
-            </p>
+              <Line
+                type="monotone"
+                dataKey="normal"
+                stroke="#6B7280"
+                strokeDasharray="5 5"
+                strokeWidth={2}
+                dot={false}
+                name="Vieillissement attendu"
+              />
+
+              <Line
+                type="monotone"
+                dataKey="current"
+                stroke="#F97316"
+                strokeWidth={3}
+                dot={false}
+                name="Trajectoire actuelle"
+              />
+
+              <Line
+                type="monotone"
+                dataKey="optimized"
+                stroke="#22C55E"
+                strokeWidth={3}
+                dot={false}
+                name="Trajectoire optimisée"
+              />
+
+              <ReferenceDot
+                x={currentAge}
+                y={currentNCA}
+                r={6}
+                fill="#3B82F6"
+                stroke="#FFFFFF"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Résumé prospectif */}
+      <Card className="bg-gray-900 border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Résumé prospectif à 5 ans
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-gradient-to-br from-orange-900/20 to-orange-900/5 border border-orange-900 rounded-lg">
+              <p className="text-xs text-orange-400 mb-1">
+                Dans 5 ans (sans intervention)
+              </p>
+              <p className="text-2xl font-bold text-orange-500">
+                {trajectoryData[5]?.current.toFixed(1)} ans
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                ANC prédit
+              </p>
+            </div>
+
+            <div className="p-4 bg-gradient-to-br from-green-900/20 to-green-900/5 border border-green-900 rounded-lg">
+              <p className="text-xs text-green-400 mb-1">
+                Dans 5 ans (avec interventions)
+              </p>
+              <p className="text-2xl font-bold text-green-500">
+                {trajectoryData[5]?.optimized.toFixed(1)} ans
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                ANC prédit
+              </p>
+            </div>
+
+            <div className="p-4 bg-gradient-to-br from-purple-900/20 to-purple-900/5 border border-purple-900 rounded-lg">
+              <p className="text-xs text-purple-400 mb-1">
+                Années gagnées
+              </p>
+              <p className="text-2xl font-bold text-purple-500">
+                {(trajectoryData[5]?.current - trajectoryData[5]?.optimized).toFixed(1)} ans
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Bénéfice potentiel
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Indicateur de données réelles */}
-      {results.trajectory.based_on_real_data && (
-        <div className="p-3 bg-green-900/20 border border-green-900 rounded-lg">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <p className="text-sm text-green-400 font-semibold">
-              Prédictions basées sur données longitudinales réelles
-            </p>
-          </div>
-        </div>
+      {/* Équité en santé */}
+      {healthEquityScore > 60 && (
+        <Card className="bg-red-900/20 border-red-900">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-400 mb-2">
+                  Alerte équité en santé
+                </h3>
+
+                <p className="text-sm text-red-300 mb-3">
+                  Score d’équité en santé :
+                  <span className="font-bold"> {healthEquityScore}%</span>
+                </p>
+
+                <p className="text-sm text-gray-300">
+                  Envisager une orientation sociale en complément de la prise en
+                  charge neuropsychologique.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
+          <ExplainableAI results={results} />  
     </div>
   );
 }

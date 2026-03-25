@@ -9,12 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Slider } from './ui/slider';
 import { ExtendedPredictionOutput } from '../types';
+
 interface PredictionFormProps {
-  onPredictionComplete: (result: ExtendedPredictionOutput) => void;  // ← Changé
+  onPredictionComplete: (result: ExtendedPredictionOutput) => void;
 }
 
 export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
-    const [currentStep, setCurrentStep] = useState<'basic' | 'neuropsych' | 'lifestyle'>('basic');
+    const [currentStep, setCurrentStep] = useState<'basic' | 'lifestyle'>('basic');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
         model_type: 'model_3',
         // Optional fields with defaults
         handedness: 0,
-        nb_language: 2,
+        nb_language: 1, // 0 = monolingue, 1 = plurilingue
         hearing: 0,
         moca: 26,
         ravlt_imm: 45,
@@ -40,27 +41,38 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
         hist_demence_fam: 0,
         hist_demence_parent: 0,
         living_alone: 0,
-        income: 1,
-        retired: 1,
+        income: 1, // 0 = difficultés financières, 1 = pas de difficultés
+        retired: 0,
         stroke: 0,
         tbi: 0,
         hta: 0,
         diab_type2: 0,
+        chol_total: 0, // Nouveau champ
         obesity: 0,
         depression: 0,
         anxiety: 0,
         smoking: 0,
         alcohol: 0,
         poly_pharm5: 0,
-        physical_activity: 1,
-        social_life: 1,
-        cognitive_activities: 1,
-        nutrition_score: 1,
+        physical_activity: 1, // 0 = sédentaire, 1 = actif
+        social_life: 1, // 0 = isolement, 1 = vie sociale active
+        cognitive_activities: 1, // 0 = réduite, 1 = active
+        nutrition_score: 1, // 0 = dénutrition, 1 = bonne nutrition
         sleep_deprivation: 0,
     });
 
     const updateField = (field: keyof PredictionInput, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Helper pour inverser les valeurs des champs avec logique inversée
+    const getInvertedValue = (field: keyof PredictionInput): number => {
+        return formData[field] === 1 ? 0 : 1;
+    };
+
+    const setInvertedValue = (field: keyof PredictionInput, displayValue: number) => {
+        // Si le toggle affiche 1 (OUI pour difficultés), on stocke 0 dans le backend
+        updateField(field, displayValue === 1 ? 0 : 1);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -70,7 +82,7 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
 
         try {
             const result = await apiService.predict(formData as PredictionInput);
-            onPredictionComplete(result as ExtendedPredictionOutput);  // ← Correction ici
+            onPredictionComplete(result as ExtendedPredictionOutput);
         } catch (err: any) {
             setError(err.error || 'Une erreur est survenue');
             console.error('Prediction error:', err);
@@ -91,10 +103,9 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                 <CardContent>
                     <form onSubmit={handleSubmit}>
                         <Tabs value={currentStep} onValueChange={(v) => setCurrentStep(v as any)}>
-                            <TabsList className="grid w-full grid-cols-3 bg-gray-800">
+                            <TabsList className="grid w-full grid-cols-2 bg-gray-800">
                                 <TabsTrigger value="basic">Informations de base</TabsTrigger>
-                                <TabsTrigger value="neuropsych">Tests neuropsychologiques</TabsTrigger>
-                                <TabsTrigger value="lifestyle">Style de vie & Santé</TabsTrigger>
+                                <TabsTrigger value="lifestyle">Santé et style de vie</TabsTrigger>
                             </TabsList>
 
                             {/* Step 1: Basic Information */}
@@ -174,6 +185,23 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                         </Select>
                                     </div>
 
+                                    {/* Bilinguisme (nb_language binarisé) */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="nb_language">Langues parlées</Label>
+                                        <Select
+                                            value={String(formData.nb_language)}
+                                            onValueChange={(v) => updateField('nb_language', Number(v))}
+                                        >
+                                            <SelectTrigger className="bg-gray-800 border-gray-700">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-gray-800 border-gray-700">
+                                                <SelectItem value="0">Monolingue</SelectItem>
+                                                <SelectItem value="1">Plurilingue</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
                                     {/* Fluency Score */}
                                     <div className="space-y-2">
                                         <Label htmlFor="fluency">Score fluence catégorielle: {formData.fluency_score}</Label>
@@ -188,35 +216,6 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                         />
                                     </div>
 
-                                    {/* Number of languages */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nb_language">Nombre de langues: {formData.nb_language}</Label>
-                                        <Slider
-                                            id="nb_language"
-                                            min={1}
-                                            max={5}
-                                            step={1}
-                                            value={[formData.nb_language || 2]}
-                                            onValueChange={(v) => updateField('nb_language', v[0])}
-                                            className="pt-2"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end">
-                                    <Button
-                                        type="button"
-                                        onClick={() => setCurrentStep('neuropsych')}
-                                        className="bg-blue-600 hover:bg-blue-700"
-                                    >
-                                        Suivant →
-                                    </Button>
-                                </div>
-                            </TabsContent>
-
-                            {/* Step 2: Neuropsych Tests */}
-                            <TabsContent value="neuropsych" className="space-y-6 mt-6">
-                                <div className="grid grid-cols-2 gap-6">
                                     {/* MoCA */}
                                     <div className="space-y-2">
                                         <Label htmlFor="moca">Score MoCA: {formData.moca}/30</Label>
@@ -248,62 +247,6 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                         </Select>
                                     </div>
 
-                                    {/* RAVLT Immediate */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="ravlt_imm">RAVLT immédiat: {formData.ravlt_imm}/75</Label>
-                                        <Slider
-                                            id="ravlt_imm"
-                                            min={0}
-                                            max={75}
-                                            step={1}
-                                            value={[formData.ravlt_imm || 45]}
-                                            onValueChange={(v) => updateField('ravlt_imm', v[0])}
-                                            className="pt-2"
-                                        />
-                                    </div>
-
-                                    {/* RAVLT Delayed */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="ravlt_delay">RAVLT différé: {formData.ravlt_delay}/15</Label>
-                                        <Slider
-                                            id="ravlt_delay"
-                                            min={0}
-                                            max={15}
-                                            step={1}
-                                            value={[formData.ravlt_delay || 10]}
-                                            onValueChange={(v) => updateField('ravlt_delay', v[0])}
-                                            className="pt-2"
-                                        />
-                                    </div>
-
-                                    {/* Logical Memory Immediate */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="logic_imm">Mémoire logique immédiate: {formData.logic_imm}/25</Label>
-                                        <Slider
-                                            id="logic_imm"
-                                            min={0}
-                                            max={25}
-                                            step={1}
-                                            value={[formData.logic_imm || 15]}
-                                            onValueChange={(v) => updateField('logic_imm', v[0])}
-                                            className="pt-2"
-                                        />
-                                    </div>
-
-                                    {/* Logical Memory Delayed */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="logic_delay">Mémoire logique différée: {formData.logic_delay}/25</Label>
-                                        <Slider
-                                            id="logic_delay"
-                                            min={0}
-                                            max={25}
-                                            step={1}
-                                            value={[formData.logic_delay || 12]}
-                                            onValueChange={(v) => updateField('logic_delay', v[0])}
-                                            className="pt-2"
-                                        />
-                                    </div>
-
                                     {/* Hearing */}
                                     <div className="space-y-2">
                                         <Label htmlFor="hearing">Problème d'audition</Label>
@@ -322,15 +265,7 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between">
-                                    <Button
-                                        type="button"
-                                        onClick={() => setCurrentStep('basic')}
-                                        variant="outline"
-                                        className="border-gray-700"
-                                    >
-                                        ← Précédent
-                                    </Button>
+                                <div className="flex justify-end">
                                     <Button
                                         type="button"
                                         onClick={() => setCurrentStep('lifestyle')}
@@ -341,133 +276,265 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                 </div>
                             </TabsContent>
 
-                            {/* Step 3: Lifestyle & Health */}
-                            <TabsContent value="lifestyle" className="space-y-6 mt-6">
-                                <div className="grid grid-cols-3 gap-6">
-                                    {/* Binary toggles for risk factors */}
-                                    {[
-                                        { key: 'hta', label: 'Hypertension' },
-                                        { key: 'diab_type2', label: 'Diabète type 2' },
-                                        { key: 'obesity', label: 'Obésité' },
-                                        { key: 'depression', label: 'Dépression' },
-                                        { key: 'anxiety', label: 'Anxiété' },
-                                        { key: 'smoking', label: 'Tabagisme' },
-                                        { key: 'alcohol', label: 'Alcool' },
-                                        { key: 'stroke', label: 'AVC' },
-                                        { key: 'tbi', label: 'Traumatisme crânien' },
-                                        { key: 'poly_pharm5', label: 'Polypharmacie (≥5)' },
-                                        { key: 'living_alone', label: 'Vit seul(e)' },
-                                        { key: 'sleep_deprivation', label: 'Privation sommeil' },
-                                        { key: 'hist_demence_fam', label: 'Hist. familial démence' },
-                                        { key: 'hist_demence_parent', label: 'Hist. parental démence' },
-                                        { key: 'retired', label: 'Retraité(e)' },
-                                    ].map(({ key, label }) => (
-                                        <div key={key} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                                            <Label htmlFor={key} className="text-sm">{label}</Label>
-                                            <button
-                                                type="button"
-                                                id={key}
-                                                role="switch"
-                                                aria-checked={formData[key as keyof PredictionInput] === 1}
-                                                onClick={() => updateField(key as keyof PredictionInput, formData[key as keyof PredictionInput] === 1 ? 0 : 1)}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                                    formData[key as keyof PredictionInput] === 1 ? 'bg-blue-600' : 'bg-gray-600'
-                                                }`}
-                                            >
-                        <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                formData[key as keyof PredictionInput] === 1 ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                        />
-                                            </button>
-                                        </div>
-                                    ))}
+                            {/* Step 2: Lifestyle & Health */}
+                            <TabsContent value="lifestyle" className="space-y-8 mt-6">
+                                {/* Section 1: Profil clinique et médical */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                                        Profil clinique et médical
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {[
+                                            { key: 'hist_demence_fam', label: 'Hist. familial démence' },
+                                            { key: 'hist_demence_parent', label: 'Hist. parental démence' },
+                                            { key: 'hta', label: 'Hypertension' },
+                                            { key: 'diab_type2', label: 'Diabète type 2' },
+                                            { key: 'cholesterol', label: 'Cholestérol' },
+                                            { key: 'obesity', label: 'Obésité' },
+                                            { key: 'stroke', label: 'AVC' },
+                                            { key: 'tbi', label: 'Traumatisme crânien' },
+                                            { key: 'depression', label: 'Dépression' },
+                                            { key: 'anxiety', label: 'Anxiété' },
+                                            { key: 'poly_pharm5', label: 'Polypharmacie (≥5 médicaments)' },
+                                        ].map(({ key, label }) => (
+                                            <div key={key} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                                <Label htmlFor={key} className="text-sm">{label}</Label>
+                                                <button
+                                                    type="button"
+                                                    id={key}
+                                                    role="switch"
+                                                    aria-checked={formData[key as keyof PredictionInput] === 1}
+                                                    onClick={() => updateField(key as keyof PredictionInput, formData[key as keyof PredictionInput] === 1 ? 0 : 1)}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                        formData[key as keyof PredictionInput] === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                            formData[key as keyof PredictionInput] === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                        }`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6 mt-6">
-                                    {/* Income */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="income">Revenu</Label>
-                                        <Select
-                                            value={String(formData.income)}
-                                            onValueChange={(v) => updateField('income', Number(v))}
-                                        >
-                                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-gray-800 border-gray-700">
-                                                <SelectItem value="0">Faible</SelectItem>
-                                                <SelectItem value="1">Élevé</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                {/* Section 2: Contexte psychosocial et habitudes de vie */}
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700 pb-2">
+                                        Contexte psychosocial et habitudes de vie
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Retired - logique normale */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="retired" className="text-sm">Retraité(e)</Label>
+                                            <button
+                                                type="button"
+                                                id="retired"
+                                                role="switch"
+                                                aria-checked={formData.retired === 1}
+                                                onClick={() => updateField('retired', formData.retired === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    formData.retired === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        formData.retired === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
 
-                                    {/* Physical Activity */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="physical_activity">Activité physique</Label>
-                                        <Select
-                                            value={String(formData.physical_activity)}
-                                            onValueChange={(v) => updateField('physical_activity', Number(v))}
-                                        >
-                                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-gray-800 border-gray-700">
-                                                <SelectItem value="0">Sédentaire</SelectItem>
-                                                <SelectItem value="1">Active</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        {/* Living alone - logique normale */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="living_alone" className="text-sm">Vit seul(e)</Label>
+                                            <button
+                                                type="button"
+                                                id="living_alone"
+                                                role="switch"
+                                                aria-checked={formData.living_alone === 1}
+                                                onClick={() => updateField('living_alone', formData.living_alone === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    formData.living_alone === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        formData.living_alone === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
 
-                                    {/* Social Life */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="social_life">Vie sociale</Label>
-                                        <Select
-                                            value={String(formData.social_life)}
-                                            onValueChange={(v) => updateField('social_life', Number(v))}
-                                        >
-                                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-gray-800 border-gray-700">
-                                                <SelectItem value="0">Peu active</SelectItem>
-                                                <SelectItem value="1">Active</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        {/* Income - LOGIQUE INVERSÉE (Difficultés financières) */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="income" className="text-sm">Difficultés financières ou matérielles</Label>
+                                            <button
+                                                type="button"
+                                                id="income"
+                                                role="switch"
+                                                aria-checked={getInvertedValue('income') === 1}
+                                                onClick={() => setInvertedValue('income', getInvertedValue('income') === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    getInvertedValue('income') === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        getInvertedValue('income') === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
 
-                                    {/* Cognitive Activities */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="cognitive_activities">Activités cognitives</Label>
-                                        <Select
-                                            value={String(formData.cognitive_activities)}
-                                            onValueChange={(v) => updateField('cognitive_activities', Number(v))}
-                                        >
-                                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-gray-800 border-gray-700">
-                                                <SelectItem value="0">Peu fréquentes</SelectItem>
-                                                <SelectItem value="1">Fréquentes</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        {/* Social life - LOGIQUE INVERSÉE (Isolement social) */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="social_life" className="text-sm">Isolement social</Label>
+                                            <button
+                                                type="button"
+                                                id="social_life"
+                                                role="switch"
+                                                aria-checked={getInvertedValue('social_life') === 1}
+                                                onClick={() => setInvertedValue('social_life', getInvertedValue('social_life') === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    getInvertedValue('social_life') === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        getInvertedValue('social_life') === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
 
-                                    {/* Nutrition Score */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nutrition_score">Score nutritionnel</Label>
-                                        <Select
-                                            value={String(formData.nutrition_score)}
-                                            onValueChange={(v) => updateField('nutrition_score', Number(v))}
-                                        >
-                                            <SelectTrigger className="bg-gray-800 border-gray-700">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-gray-800 border-gray-700">
-                                                <SelectItem value="0">Faible</SelectItem>
-                                                <SelectItem value="1">Élevé</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        {/* Smoking - logique normale */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="smoking" className="text-sm">Tabagisme</Label>
+                                            <button
+                                                type="button"
+                                                id="smoking"
+                                                role="switch"
+                                                aria-checked={formData.smoking === 1}
+                                                onClick={() => updateField('smoking', formData.smoking === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    formData.smoking === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        formData.smoking === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Alcohol - logique normale */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="alcohol" className="text-sm">Alcool</Label>
+                                            <button
+                                                type="button"
+                                                id="alcohol"
+                                                role="switch"
+                                                aria-checked={formData.alcohol === 1}
+                                                onClick={() => updateField('alcohol', formData.alcohol === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    formData.alcohol === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        formData.alcohol === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Physical activity - LOGIQUE INVERSÉE (Sédentarité) */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="physical_activity" className="text-sm">Sédentarité</Label>
+                                            <button
+                                                type="button"
+                                                id="physical_activity"
+                                                role="switch"
+                                                aria-checked={getInvertedValue('physical_activity') === 1}
+                                                onClick={() => setInvertedValue('physical_activity', getInvertedValue('physical_activity') === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    getInvertedValue('physical_activity') === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        getInvertedValue('physical_activity') === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Nutrition - LOGIQUE INVERSÉE (Dénutrition) */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="nutrition_score" className="text-sm">Dénutrition ou mauvaise alimentation</Label>
+                                            <button
+                                                type="button"
+                                                id="nutrition_score"
+                                                role="switch"
+                                                aria-checked={getInvertedValue('nutrition_score') === 1}
+                                                onClick={() => setInvertedValue('nutrition_score', getInvertedValue('nutrition_score') === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    getInvertedValue('nutrition_score') === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        getInvertedValue('nutrition_score') === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Sleep deprivation - logique normale */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="sleep_deprivation" className="text-sm">Privation de sommeil</Label>
+                                            <button
+                                                type="button"
+                                                id="sleep_deprivation"
+                                                role="switch"
+                                                aria-checked={formData.sleep_deprivation === 1}
+                                                onClick={() => updateField('sleep_deprivation', formData.sleep_deprivation === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    formData.sleep_deprivation === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        formData.sleep_deprivation === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Cognitive activities - LOGIQUE INVERSÉE (Activité cognitive réduite) */}
+                                        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                            <Label htmlFor="cognitive_activities" className="text-sm">Activité cognitive réduite</Label>
+                                            <button
+                                                type="button"
+                                                id="cognitive_activities"
+                                                role="switch"
+                                                aria-checked={getInvertedValue('cognitive_activities') === 1}
+                                                onClick={() => setInvertedValue('cognitive_activities', getInvertedValue('cognitive_activities') === 1 ? 0 : 1)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                    getInvertedValue('cognitive_activities') === 1 ? 'bg-blue-600' : 'bg-gray-600'
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                        getInvertedValue('cognitive_activities') === 1 ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -480,7 +547,7 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
                                 <div className="flex justify-between pt-4">
                                     <Button
                                         type="button"
-                                        onClick={() => setCurrentStep('neuropsych')}
+                                        onClick={() => setCurrentStep('basic')}
                                         variant="outline"
                                         className="border-gray-700"
                                     >

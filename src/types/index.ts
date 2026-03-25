@@ -44,6 +44,7 @@ export interface PredictionInput {
   cognitive_activities?: number;
   nutrition_score?: number;
   sleep_deprivation?: number;
+  chol_total?: number;
 }
 
 export interface FormState extends PredictionInput {
@@ -390,6 +391,8 @@ export interface ExtendedPredictionOutput extends PredictionOutput {
   std_zones?: StdZones;
 
   risk_scores?: RiskScores;
+
+  patient_age?: number;
 }
  // ==================== MODULE NCA : PRÉDICTION AVEC GESTION NaN ====================
  
@@ -398,7 +401,12 @@ export interface NCAFeaturesDetail {
    cognitifs: number;
    risques: number;
  }
- 
+ export interface ConfidenceInterval {
+  lower: number;
+  upper: number;
+  std?: number;
+  confidence_level?: number;
+}
 export interface NCAPrediction {
    nca_predicted: number;
    delta_nca: number;
@@ -410,6 +418,7 @@ export interface NCAPrediction {
    reliability: string;
    reliability_stars: string;
    features_detail: NCAFeaturesDetail;
+   confidence_interval: ConfidenceInterval;
  }
 // ==================== MODEL INFO ====================
 

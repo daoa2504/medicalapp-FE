@@ -1,93 +1,88 @@
-import  { useMemo } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+
 
 interface GaugeChartProps {
-  value: number; // 0-100
-  title?: string;
+  value: number;  // 0-100
+  title: string;
 }
 
 export function GaugeChart({ value, title }: GaugeChartProps) {
-  const safeValue = useMemo(() => {
-    const v = Number.isFinite(value) ? value : 0;
-    return Math.max(0, Math.min(100, v));
-  }, [value]);
-
-  const getColor = (val: number) => {
-    if (val < 20) return "#22c55e";
-    if (val < 40) return "#84cc16";
-    if (val < 60) return "#eab308";
-    if (val < 80) return "#f97316";
-    return "#ef4444";
+  // Limiter la valeur entre 0 et 100
+  const clampedValue = Math.min(100, Math.max(0, value));
+  
+  // Déterminer la couleur selon 3 niveaux
+  const getColor = (val: number): string => {
+    if (val < 30) return '#22c55e';      // green-500 - Faible
+    if (val < 60) return '#eab308';      // yellow-500 - Modéré
+    return '#ef4444';                     // red-500 - Élevé
   };
 
-  const color = getColor(safeValue);
-
-  // Pour un demi-gauge propre, on garde 2 "parts"
-  const data = [
-    { name: "value", value: safeValue },
-    { name: "remaining", value: 100 - safeValue },
-  ];
-
+  const color = getColor(clampedValue);
+  
+  // Calcul de l'angle pour le semi-cercle (180° = 0%, 0° = 100%)
+  const angle = 180 - (clampedValue * 1.8); // 1.8 = 180/100
+  
   return (
-    <div className="flex flex-col items-center min-w-0">
-      {title && (
-        <p className="text-sm text-gray-300 mb-2 text-center">{title}</p>
-      )}
-
-      {/* ✅ IMPORTANT: hauteur explicite + minWidth:0 */}
-      <div className="w-full max-w-[260px] min-w-0" style={{ height: 180 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              cx="50%"
-              cy="75%"              // ✅ descend le centre pour que le demi-cercle soit bien visible
-              startAngle={180}
-              endAngle={0}
-              innerRadius="70%"
-              outerRadius="95%"
-              paddingAngle={0}
-              isAnimationActive={false}
-            >
-              <Cell fill={color} />
-              <Cell fill="#1f2937" />
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-
-        {/* ✅ texte centré dans le demi-gauge */}
-        <div className="pointer-events-none absolute" />
-      </div>
-
-      {/* Texte au centre (on le place sous le demi-cercle) */}
-      <div className="-mt-16 flex flex-col items-center">
-        <span className="text-4xl font-bold" style={{ color }}>
-          {Math.round(safeValue)}%
-        </span>
-
-        <p className="mt-1 text-sm text-gray-400 text-center">
-          {safeValue < 20 && "Très faible"}
-          {safeValue >= 20 && safeValue < 40 && "Faible"}
-          {safeValue >= 40 && safeValue < 60 && "Modéré"}
-          {safeValue >= 60 && safeValue < 80 && "Élevé"}
-          {safeValue >= 80 && "Très élevé"}
-        </p>
-      </div>
-
-      {/* Barres de niveau */}
-      <div className="mt-4 flex items-center gap-2">
-        <div className="flex gap-1">
-          {[0, 20, 40, 60, 80].map((threshold) => (
-            <div
-              key={threshold}
-              className={`w-8 h-2 rounded-full transition-opacity ${
-                safeValue >= threshold ? "opacity-100" : "opacity-30"
-              }`}
-              style={{ backgroundColor: getColor(threshold + 10) }}
-            />
-          ))}
+    <div className="flex flex-col items-center">
+      {/* Titre */}
+      <h4 className="text-lg font-semibold text-gray-200 mb-4 text-center">
+        {title}
+      </h4>
+      
+      {/* Conteneur de la jauge */}
+      <div className="relative w-48 h-24">
+        {/* Arc de fond (gris) */}
+        <svg className="w-full h-full" viewBox="0 0 200 100">
+          {/* Fond gris */}
+          <path
+            d="M 20 90 A 80 80 0 0 1 180 90"
+            fill="none"
+            stroke="#374151"
+            strokeWidth="20"
+            strokeLinecap="round"
+          />
+          
+          {/* Arc coloré selon la valeur */}
+          <path
+            d="M 20 90 A 80 80 0 0 1 180 90"
+            fill="none"
+            stroke={color}
+            strokeWidth="20"
+            strokeLinecap="round"
+            strokeDasharray={`${clampedValue * 2.51} 251`}
+            className="transition-all duration-1000 ease-out"
+          />
+          
+          {/* Aiguille */}
+          <line
+            x1="100"
+            y1="90"
+            x2="100"
+            y2="30"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            transform={`rotate(${angle} 100 90)`}
+            className="transition-transform duration-1000 ease-out"
+          />
+          
+          {/* Point central */}
+          <circle cx="100" cy="90" r="5" fill="#ffffff" />
+        </svg>
+        
+        {/* Valeur affichée au centre */}
+        <div className="absolute inset-0 flex items-end justify-center pb-2">
+          <div className="text-center">
+            <div className="text-3xl font-bold" style={{ color }}>
+              {clampedValue.toFixed(1)}%
+            </div>
+          </div>
         </div>
+      </div>
+      
+      {/* Labels des extrémités */}
+      <div className="w-48 flex justify-between mt-2 text-xs text-gray-500">
+        <span>0%</span>
+        <span>100%</span>
       </div>
     </div>
   );
