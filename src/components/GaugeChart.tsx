@@ -19,7 +19,7 @@ export function GaugeChart({ value, title }: GaugeChartProps) {
   const color = getColor(clampedValue);
   
   // Calcul de l'angle pour le semi-cercle (180° = 0%, 0° = 100%)
-  const angle = 180 - (clampedValue * 1.8); // 1.8 = 180/100
+  //const angle = 180 - (clampedValue * 1.8); // 1.8 = 180/100
   
   return (
     <div className="flex flex-col items-center">
@@ -53,20 +53,22 @@ export function GaugeChart({ value, title }: GaugeChartProps) {
           />
           
           {/* Aiguille */}
-          <line
-            x1="100"
-            y1="90"
-            x2="100"
-            y2="30"
-            stroke="#ffffff"
-            strokeWidth="2"
-            strokeLinecap="round"
-            transform={`rotate(${angle} 100 90)`}
-            className="transition-transform duration-1000 ease-out"
-          />
+         {/* const angle = (value / 100) * 180 - 90;
+
+<line
+  x1="100"
+  y1="90"
+  x2="100"
+  y2="30"
+  stroke="#ffffff"
+  strokeWidth="6"
+  strokeLinecap="round"
+  transform={`rotate(${angle} 100 90)`}
+  className="transition-transform duration-1000 ease-out"
+/> */}
           
           {/* Point central */}
-          <circle cx="100" cy="90" r="5" fill="#ffffff" />
+          {/* <circle cx="100" cy="90" r="5" fill="#ffffff" /> */}
         </svg>
         
         {/* Valeur affichée au centre */}

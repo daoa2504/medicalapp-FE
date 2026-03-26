@@ -12,7 +12,7 @@ import { RiskFactorsPanel } from "./RiskFactorsPanel";
 import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
 import { GrowthCurveChart } from "./GrowthCurveChart";
 import { formatNumber, formatNumberWithSign } from "../utils/numberFormat";
-import { RiskGauges } from '@/components/RiskGauges';
+
 interface ResultsDisplayProps {
   results: ExtendedPredictionOutput;
   onBack: () => void;
@@ -30,8 +30,8 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
 
   // ✅ Remount key: force le montage du chart quand on change d'onglet
   const chartKey = useMemo(() => `chart-${activeTab}-${results?.identifier ?? "x"}`, [activeTab, results?.identifier]);
-  const riskActuel = results.risk_scores?.risk_dementia ?? 50;
-  const riskAtteignable = Math.round(riskActuel * 0.72);
+  
+ 
   return (
     <div className="space-y-6">
       {/* Navigation */}
@@ -69,11 +69,11 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
             {/* ✅ Important: min-w-0 sur CardContent aussi */}
             <CardContent className="min-w-0">
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
-                <TabsList className="grid w-full grid-cols-4 bg-gray-800 mb-6">
-                  <TabsTrigger value="position">📊 Module 1</TabsTrigger>
-                  <TabsTrigger value="trajectory">📈 Module 2</TabsTrigger>
-                  <TabsTrigger value="percentiles">🧭 Zones</TabsTrigger>
-                  <TabsTrigger value="centiles">📉 Centiles</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-gray-800 mb-6">
+                  <TabsTrigger value="position">📊 Estimations et détection </TabsTrigger>
+                  <TabsTrigger value="trajectory">📈 Estimations et détection </TabsTrigger>
+                {/*   <TabsTrigger value="percentiles">🧭 Zones</TabsTrigger>
+                  <TabsTrigger value="centiles">📉 Centiles</TabsTrigger> */}
                 </TabsList>
 {/* ========== NOUVEAU : RÉSULTATS NCA ========== */}
          
@@ -199,13 +199,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
           {/* Gauges */}
           {/* ========== NOUVELLE SECTION : GAUGES DE RISQUE ========== */}
       
-             {results.risk_scores && (
-                <RiskGauges
-                  riskDementia={results.risk_scores.risk_dementia }
-                  
-                />
-)}
- 
+             
          {/*  <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-xl">Évaluation des Risques</CardTitle>
@@ -232,44 +226,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
 
          
 
-          {/* Improvement Potential */}
-          <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-900/50">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <CardTitle>Potentiel d'Amélioration</CardTitle>
-              </div>
-            </CardHeader>
-            
-           <CardContent>
-  <div className="grid grid-cols-2 gap-6">
-    <div>
-      <p className="text-sm text-gray-400 mb-2">Risque Actuel</p>
-      <p className="text-4xl font-bold text-orange-500">{Math.round(riskActuel)}%</p>
-    </div>
-    <div>
-      <p className="text-sm text-gray-400 mb-2">Risque Atteignable</p>
-      <p className="text-4xl font-bold text-green-500">{riskAtteignable}%</p>
-    </div>
-  </div>
-
-  <div className="mt-6 p-4 bg-gray-900/50 rounded-lg">
-    <div className="flex items-center gap-2 mb-2">
-      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-      <p className="text-sm font-semibold text-green-400">
-        Votre risque actuel de {Math.round(riskActuel)}%
-      </p>
-    </div>
-    <p className="text-sm text-gray-300">
-      pourrait être ramené à {riskAtteignable}% si les facteurs modifiables sont traités.
-    </p>
-  </div>
-</CardContent>
-          </Card>
+          
         </div>
 
         {/* Right Panel */}

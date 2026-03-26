@@ -82,7 +82,10 @@ export function PredictionForm({ onPredictionComplete }: PredictionFormProps) {
 
         try {
             const result = await apiService.predict(formData as PredictionInput);
-            onPredictionComplete(result as ExtendedPredictionOutput);
+            // Fusionner formData dans le résultat pour que les alertes
+            // (facteurs de risque modifiables, équité) puissent lire income,
+            // social_life, hta, etc. depuis l'objet results.
+            onPredictionComplete({ ...formData, ...result } as ExtendedPredictionOutput);
         } catch (err: any) {
             setError(err.error || 'Une erreur est survenue');
             console.error('Prediction error:', err);

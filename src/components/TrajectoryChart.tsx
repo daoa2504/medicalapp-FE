@@ -88,26 +88,39 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
 
         <CardContent>
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={trajectoryData}>
+            <LineChart
+              data={trajectoryData}
+              margin={{ top: 10, right: 30, left: 70, bottom: 50 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
 
+              {/* ── Axe X : débute à 40, ticks tous les 5 ans ─────────────── */}
               <XAxis
                 dataKey="age"
+                stroke="#9CA3AF"
+                tick={{ fill: "#6b7280", fontSize: 11 }}
                 label={{
                   value: "Âge (années)",
                   position: "insideBottom",
-                  offset: -5,
+                  offset: -35,
+                  fill: "#9CA3AF",
+                  fontSize: 12,
                 }}
-                stroke="#9CA3AF"
               />
 
+              {/* ── Axe Y : label décalé à gauche pour éviter chevauchement ─ */}
               <YAxis
+                domain={[40, "auto"]}
+                stroke="#9CA3AF"
+                tick={{ fill: "#6b7280", fontSize: 11 }}
                 label={{
                   value: "Âge neurocognitif (années)",
                   angle: -90,
                   position: "insideLeft",
+                  dx: -55,
+                  fill: "#9CA3AF",
+                  fontSize: 12,
                 }}
-                stroke="#9CA3AF"
               />
 
               <Tooltip
@@ -117,16 +130,27 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
                   borderRadius: "8px",
                 }}
                 labelStyle={{ color: "#F3F4F6" }}
+                formatter={(value: number | undefined) => [
+                  value != null ? `${Number(value).toFixed(1)} ans` : "—",
+                  undefined,
+                ]}
               />
 
-              <Legend />
+              <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: "12px" }} />
 
+              {/* ── Zone à risque : de currentNCA (position actuelle) jusqu'au ─
+                   max projeté en 10 ans sans intervention ─────────────────── */}
               <ReferenceArea
-                y1={currentAge + 5}
-                y2={currentAge + 20}
+                y1={currentNCA}
+                y2={trajectoryData[trajectoryData.length - 1]?.current ?? currentNCA + 20}
                 fill="#EF4444"
-                fillOpacity={0.1}
-                label={{ value: "Zone à risque", position: "insideTopLeft" }}
+                fillOpacity={0.07}
+                label={{
+                  value: "Zone à risque",
+                  position: "insideTopLeft",
+                  fill: "#f87171",
+                  fontSize: 11,
+                }}
               />
 
               <Line
