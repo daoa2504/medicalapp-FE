@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 import { ScatterPlotChart } from "./ScatterPlotChart";
 import { TrajectoryChart } from "./TrajectoryChart";
-import { ExplainableAI } from "./ExplainableAI";
+
 
 // import { RiskFactorsPanel } from "./RiskFactorsPanel";
 // import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
@@ -32,8 +32,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
     [activeTab, results?.identifier]
   );
 
-  const riskActuel = results.risk_scores?.risk_dementia ?? 50;
-  const riskAtteignable = Math.round(riskActuel * 0.72);
+
 
   return (
     <div className="space-y-6">
