@@ -45,8 +45,9 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
         optimized: currentNCA + optimizedRate * i,
         normal: normalRef,
         // Zone à risque : 5 ans AU-DESSUS de la ligne de référence, entières
-        riskLower: normalRef + 5,
-        riskBand: 30,
+        riskLower: normalRef + 5,  // base transparente (départ de la zone)
+        riskOrange: 5,              // zone modérée  : de +5 à +10
+        riskRed: 25,                // zone sévère   : de +10 vers le haut
       });
     }
 
@@ -85,7 +86,7 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
     const filtered = payload.filter(
-      (p: any) => p.dataKey !== "riskLower" && p.dataKey !== "riskBand"
+      (p: any) => !["riskLower", "riskOrange", "riskRed"].includes(p.dataKey)
     );
     if (!filtered.length) return null;
     return (
@@ -164,12 +165,12 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
                 verticalAlign="top"
                 wrapperStyle={{ paddingBottom: "12px" }}
                 formatter={(value) =>
-                  value === "riskLower" || value === "riskBand" ? null : value
+                  ["riskLower", "riskOrange", "riskRed"].includes(value as string) ? null : value
                 }
               />
 
-              {/* ── Bande diagonale zone à risque ─────────────────────────── */}
-              {/* 1. Base transparente = ligne diagonale (normal = age) */}
+              {/* ── Zones à risque diagonales ────────────────────────────── */}
+              {/* 1. Base transparente : de la ligne de référence à +5 */}
               <Area
                 type="monotone"
                 dataKey="riskLower"
@@ -181,27 +182,47 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
                 tooltipType="none"
                 activeDot={false}
               />
-              {/* 2. Bande empilée par-dessus → suit la diagonale */}
+              {/* 2. Zone modérée (orange) : de +5 à +10 */}
               <Area
                 type="monotone"
-                dataKey="riskBand"
+                dataKey="riskOrange"
                 stackId="risk"
-                stroke="#f87171"
-                strokeWidth={0.5}
-                strokeOpacity={0.4}
-                fill="#FCA5A5"
-                fillOpacity={0.13}
+                stroke="#f97316"
+                strokeWidth={1}
+                strokeOpacity={0.5}
+                fill="#f97316"
+                fillOpacity={0.28}
+                dot={false}
+                legendType="none"
+                tooltipType="none"
+                activeDot={false}
+              />
+              {/* 3. Zone sévère (rouge) : de +10 vers le haut */}
+              <Area
+                type="monotone"
+                dataKey="riskRed"
+                stackId="risk"
+                stroke="#ef4444"
+                strokeWidth={1}
+                strokeOpacity={0.5}
+                fill="#ef4444"
+                fillOpacity={0.22}
                 dot={false}
                 legendType="none"
                 tooltipType="none"
                 activeDot={false}
               />
 
-              {/* Label "Zone à risque" — centré dans la bande rose */}
+              {/* Labels — positionnés côté gauche où les zones démarrent bas */}
               <ReferenceLine
-                y={currentAge + 5 + 2}
+                y={currentAge + 7}
                 stroke="none"
-                label={{ value: "⚠ Zone à risque", position: "insideLeft", fill: "#f87171", fontSize: 10 }}
+                label={{ value: "Risque modéré", position: "insideLeft", offset: 8, fill: "#f97316", fontSize: 10, fontWeight: 600 }}
+              />
+              <ReferenceLine
+                y={currentAge + 13}
+                stroke="none"
+                label={{ value: "⚠ Risque élevé", position: "insideLeft", offset: 8, fill: "#ef4444", fontSize: 10, fontWeight: 600 }}
               />
 
               {/* ── Lignes ────────────────────────────────────────────────── */}
@@ -218,7 +239,7 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
               <Line
                 type="monotone"
                 dataKey="current"
-                stroke="#F97316"
+                stroke="#306cb1"
                 strokeWidth={3}
                 dot={false}
                 name="Trajectoire actuelle"
@@ -254,9 +275,9 @@ export function TrajectoryChart({ results }: TrajectoryModuleProps) {
 
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-gradient-to-br from-orange-900/20 to-orange-900/5 border border-orange-900 rounded-lg">
-              <p className="text-xs text-orange-400 mb-1">Dans 5 ans (sans intervention)</p>
-              <p className="text-2xl font-bold text-orange-500">
+            <div className="p-4 rounded-lg border" style={{ background: "linear-gradient(135deg, #306cb120, #306cb108)", borderColor: "#306cb1" }}>
+              <p className="text-xs mb-1" style={{ color: "#306cb1" }}>Dans 5 ans (sans intervention)</p>
+              <p className="text-2xl font-bold" style={{ color: "#306cb1" }}>
                 {trajectoryData[5]?.current.toFixed(1)} ans
               </p>
               <p className="text-xs text-gray-400 mt-1">ANC prédit</p>
