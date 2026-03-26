@@ -41,7 +41,7 @@ function App() {
                             </svg>
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold">Évaluation Neurocognitive</h1>
+                            <h1 className="text-xl font-bold">Cogniscreen</h1>
                             <p className="text-sm text-gray-400">Interface de Triage Clinique</p>
                         </div>
                     </div>

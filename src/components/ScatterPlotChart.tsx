@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { RiskGauges } from './RiskGauges';
 import {
   ScatterChart,
   Scatter,
@@ -154,6 +155,9 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
   const delta = Number(nca.delta_nca);
   const isAccelerated = delta > 0;
   const isNormal = Math.abs(delta) < 2;
+
+  // ── Risque démence ────────────────────────────────────────────────────────
+  const riskDementia = results.risk_scores?.risk_dementia ?? 0;
 
   // ── Filtrage cohorte ─────────────────────────────────────────────────────
   const filteredCohort = (results.reference_cohort || []).filter(
@@ -375,6 +379,80 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
         </CardContent>
       </Card>
 
+      {/* ════════════════ ALERTE : FACTEURS DE RISQUE MODIFIABLES ════════════ */}
+      {modifiableRiskData.score >= 2 && (
+        <Card className="bg-orange-950/20 border-orange-800/50">
+          <CardContent className="pt-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <h3 className="text-sm font-semibold text-orange-300">Alerte — Facteurs de risque modifiables</h3>
+                  <span className="px-2 py-0.5 bg-orange-900/50 border border-orange-700/50 rounded-full text-xs text-orange-300 font-bold">
+                    {modifiableRiskData.score}/{modifiableRiskData.total}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  Chaque facteur modifiable coché agit comme un{" "}
+                  <span className="text-orange-300 font-medium">agresseur sur le cerveau</span>.
+                  Ce risque est amplifié par le terrain de vulnérabilité identifié.
+                  L'accumulation de ces facteurs accélère l'épuisement de la réserve cognitive.
+                  Considérez un plan d'intervention visant la{" "}
+                  <span className="text-orange-300 font-medium">réduction combinée</span> de ces risques.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ════════════════ ALERTE : ÉQUITÉ EN SANTÉ ════════════════ */}
+      {showEquityAlert && (
+        <Card className="bg-red-950/20 border-red-800/50">
+          <CardContent className="pt-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd"
+                    d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                    clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-red-300 mb-1.5">Alerte — Équité en santé</h3>
+                <p className="text-xs text-gray-300 leading-relaxed mb-3">
+                  Envisager une orientation sociale en complément de la prise en charge neuropsychologique.
+                </p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Considérer l'intersectionnalité des facteurs socio-économiques
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Ressources : Travailleur social, Services communautaires
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ════════════════ JAUGES DE RISQUE ════════════════ */}
+      <RiskGauges riskDementia={riskDementia} />
+
       {/* ════════════════ FILTRES ════════════════ */}
       <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4">
         <p className="text-xs text-gray-500 uppercase tracking-wide mb-3 font-medium">Filtrer la cohorte</p>
@@ -574,77 +652,6 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
           <span className="text-xs text-gray-500">âge = NCA</span>
         </div>
       </div>
-
-      {/* ════════════════ ALERTE : FACTEURS DE RISQUE MODIFIABLES ════════════ */}
-      {modifiableRiskData.score >= 2 && (
-        <Card className="bg-orange-950/20 border-orange-800/50">
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-orange-900/40 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-sm font-semibold text-orange-300">Alerte — Facteurs de risque modifiables</h3>
-                  <span className="px-2 py-0.5 bg-orange-900/50 border border-orange-700/50 rounded-full text-xs text-orange-300 font-bold">
-                    {modifiableRiskData.score}/{modifiableRiskData.total}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  Chaque facteur modifiable coché agit comme un{" "}
-                  <span className="text-orange-300 font-medium">agresseur sur le cerveau</span>.
-                  Ce risque est amplifié par le terrain de vulnérabilité identifié.
-                  L'accumulation de ces facteurs accélère l'épuisement de la réserve cognitive.
-                  Considérez un plan d'intervention visant la{" "}
-                  <span className="text-orange-300 font-medium">réduction combinée</span> de ces risques.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ════════════════ ALERTE : ÉQUITÉ EN SANTÉ ════════════════ */}
-      {showEquityAlert && (
-        <Card className="bg-red-950/20 border-red-800/50">
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd"
-                    d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-                    clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-red-300 mb-1.5">Alerte — Équité en santé</h3>
-                <p className="text-xs text-gray-300 leading-relaxed mb-3">
-                  Envisager une orientation sociale en complément de la prise en charge neuropsychologique.
-                </p>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    Considérer l'intersectionnalité des facteurs socio-économiques
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Ressources : Travailleur social, Services communautaires
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
     </div>
   );

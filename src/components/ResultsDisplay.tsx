@@ -71,7 +71,7 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
                 <TabsList className="grid w-full grid-cols-2 bg-gray-800 mb-6">
                   <TabsTrigger value="position">📊 Estimations et détection </TabsTrigger>
-                  <TabsTrigger value="trajectory">📈 Estimations et détection </TabsTrigger>
+                  <TabsTrigger value="trajectory">📈 Projection et potentiel d'amélioration </TabsTrigger>
                 {/*   <TabsTrigger value="percentiles">🧭 Zones</TabsTrigger>
                   <TabsTrigger value="centiles">📉 Centiles</TabsTrigger> */}
                 </TabsList>
