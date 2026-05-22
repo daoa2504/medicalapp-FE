@@ -52,23 +52,6 @@ export function GaugeChart({ value, title }: GaugeChartProps) {
             className="transition-all duration-1000 ease-out"
           />
           
-          {/* Aiguille */}
-         {/* const angle = (value / 100) * 180 - 90;
-
-<line
-  x1="100"
-  y1="90"
-  x2="100"
-  y2="30"
-  stroke="#ffffff"
-  strokeWidth="6"
-  strokeLinecap="round"
-  transform={`rotate(${angle} 100 90)`}
-  className="transition-transform duration-1000 ease-out"
-/> */}
-          
-          {/* Point central */}
-          {/* <circle cx="100" cy="90" r="5" fill="#ffffff" /> */}
         </svg>
         
         {/* Valeur affichée au centre */}

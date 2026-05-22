@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 import { ScatterPlotChart } from "./ScatterPlotChart";
 import { TrajectoryChart } from "./TrajectoryChart";
-
+import { CentileChart } from "./CentileChart";
+import { ExplainableAI } from "./ExplainableAI";
 
 // import { RiskFactorsPanel } from "./RiskFactorsPanel";
 // import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
@@ -19,8 +20,7 @@ interface ResultsDisplayProps {
   onBack: () => void;
 }
 
-type TabKey = "position" | "trajectory";
-// | "percentiles" | "centiles"  — désactivés temporairement
+type TabKey = "position" | "trajectory" | "centiles";
 
 export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
   console.log("RESULTS 👉", results);
@@ -32,7 +32,8 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
     [activeTab, results?.identifier]
   );
 
-
+  const riskActuel = results.risk_scores?.risk_dementia ?? 50;
+  const riskAtteignable = Math.round(riskActuel * 0.72);
 
   return (
     <div className="space-y-6">
@@ -62,11 +63,10 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
 
         <CardContent className="min-w-0">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
-            <TabsList className="grid w-full grid-cols-2 bg-gray-800 mb-6">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-800 mb-6">
               <TabsTrigger value="position">📊 Estimations et détection</TabsTrigger>
               <TabsTrigger value="trajectory">📈 Projection et potentiel d'amélioration</TabsTrigger>
-              {/* <TabsTrigger value="percentiles">🧭 Zones</TabsTrigger> */}
-              {/* <TabsTrigger value="centiles">📉 Centiles</TabsTrigger> */}
+              <TabsTrigger value="centiles">📉 Courbes de centiles</TabsTrigger>
             </TabsList>
 
             {/* Module 1 */}
@@ -97,6 +97,22 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
               </div>
             </TabsContent>
 
+            {/* Module 3 : Courbes de centiles */}
+            <TabsContent value="centiles" className="min-w-0 min-h-[560px]">
+              <div className="space-y-4 min-w-0">
+                <div className="p-4 bg-green-900/20 border border-green-900 rounded-lg">
+                  <p className="text-sm text-green-400">
+                    <strong>Objectif :</strong> Positionner le patient sur des courbes de centiles
+                    (style courbes de croissance pediatrique), pour voir s'il vieillit normalement par rapport
+                    a la cohorte de reference de meme sexe.
+                  </p>
+                </div>
+                <div className="min-w-0">
+                  <CentileChart key={chartKey} results={results} />
+                </div>
+              </div>
+            </TabsContent>
+
             {/* ── Zones diagnostiques — désactivé ──
             <TabsContent value="percentiles" className="min-w-0 min-h-[620px]">
               ...
@@ -113,10 +129,41 @@ export function ResultsDisplay({ results, onBack }: ResultsDisplayProps) {
       </Card>
 
       {/* ── Potentiel d'amélioration (pleine largeur) ──────────────────────── */}
-      
-
-      {/* ── Explainable AI (pleine largeur) ────────────────────────────────── */}
-      {/* <ExplainableAI results={results} /> */}
+      <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-900/50">
+        <CardHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <CardTitle>Potentiel d'Amélioration</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Risque Actuel</p>
+              <p className="text-4xl font-bold text-orange-500">{Math.round(riskActuel)}%</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Risque Atteignable</p>
+              <p className="text-4xl font-bold text-green-500">{riskAtteignable}%</p>
+            </div>
+          </div>
+          <div className="mt-6 p-4 bg-gray-900/50 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              <p className="text-sm font-semibold text-green-400">
+                Votre risque actuel de {Math.round(riskActuel)}%
+              </p>
+            </div>
+            <p className="text-sm text-gray-300">
+              pourrait être ramené à {riskAtteignable}% si les facteurs modifiables sont traités.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Synthèse clinique (pleine largeur) ─────────────────────────────── */}
       <Card className="bg-gray-900 border-gray-800">

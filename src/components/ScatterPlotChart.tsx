@@ -156,8 +156,9 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
   const isAccelerated = delta > 0;
   const isNormal = Math.abs(delta) < 2;
 
-  // ── Risque démence ────────────────────────────────────────────────────────
+  // ── Risque démence + handicap ─────────────────────────────────────────────
   const riskDementia = results.risk_scores?.risk_dementia ?? 0;
+  const riskHandicap = results.risk_scores?.risk_handicap ?? 0;
 
   // ── Filtrage cohorte ─────────────────────────────────────────────────────
   const filteredCohort = (results.reference_cohort || []).filter(
@@ -451,7 +452,7 @@ export function ScatterPlotChart({ results }: ScatterPlotChartProps) {
       )}
 
       {/* ════════════════ JAUGES DE RISQUE ════════════════ */}
-      <RiskGauges riskDementia={riskDementia} />
+      <RiskGauges riskDementia={riskDementia} riskHandicap={riskHandicap} />
 
       {/* ════════════════ FILTRES ════════════════ */}
       <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4">
