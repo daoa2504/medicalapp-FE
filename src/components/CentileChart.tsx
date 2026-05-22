@@ -69,7 +69,7 @@ interface ReferencePatient {
 export function CentileChart({ results }: CentileChartProps) {
   const currentAge = results.patient_age ?? results.nca_prediction?.age_chronologique ?? 65;
   const currentNCA = results.nca_prediction?.nca_predicted ?? currentAge;
-  const patientSex = results.patient_sex ?? 1;
+  const patientSex = (results as any).patient_sex ?? 1;
 
   const refCohort: ReferencePatient[] = (results as any).reference_cohort ?? [];
 
@@ -298,12 +298,13 @@ export function CentileChart({ results }: CentileChartProps) {
             <Tooltip
               contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px" }}
               labelStyle={{ color: "#f3f4f6" }}
-              formatter={(value: any, name: string) => {
-                if (value == null) return ["-", name];
-                if (name.startsWith("zone_")) return null;
-                return [`${value.toFixed(1)} ans`, name.toUpperCase()];
-              }}
-              labelFormatter={(age: number) => `Age : ${age} ans`}
+              formatter={((value: any, name: any) => {
+                const nameStr = String(name ?? "");
+                if (value == null) return ["-", nameStr];
+                if (nameStr.startsWith("zone_")) return null;
+                return [`${Number(value).toFixed(1)} ans`, nameStr.toUpperCase()];
+              }) as any}
+              labelFormatter={((label: any) => `Age : ${label} ans`) as any}
             />
 
             {/* Zones empilees - couleurs INVERSEES car NCA bas = bon, NCA haut = mauvais */}
@@ -345,16 +346,18 @@ export function CentileChart({ results }: CentileChartProps) {
             <Legend
               wrapperStyle={{ paddingTop: "10px" }}
               iconType="line"
-              payload={[
-                { value: "<3e (exceptionnel)", type: "line", color: "#7c3aed" },
-                { value: "3-10e (excellent)", type: "line", color: "#a855f7" },
-                { value: "10-25e (bon)", type: "line", color: "#3b82f6" },
-                { value: "25-75e (normal)", type: "line", color: "#22c55e" },
-                { value: "50e (mediane)", type: "line", color: "#16a34a" },
-                { value: "75-90e (a surveiller)", type: "line", color: "#f59e0b" },
-                { value: "90-97e (vigilance)", type: "line", color: "#dc2626" },
-                { value: ">97e (extreme)", type: "line", color: "#7f1d1d" },
-              ]}
+              {...({
+                payload: [
+                  { value: "<3e (exceptionnel)", type: "line", color: "#7c3aed" },
+                  { value: "3-10e (excellent)", type: "line", color: "#a855f7" },
+                  { value: "10-25e (bon)", type: "line", color: "#3b82f6" },
+                  { value: "25-75e (normal)", type: "line", color: "#22c55e" },
+                  { value: "50e (mediane)", type: "line", color: "#16a34a" },
+                  { value: "75-90e (a surveiller)", type: "line", color: "#f59e0b" },
+                  { value: "90-97e (vigilance)", type: "line", color: "#dc2626" },
+                  { value: ">97e (extreme)", type: "line", color: "#7f1d1d" },
+                ],
+              } as any)}
             />
           </ComposedChart>
         </ResponsiveContainer>

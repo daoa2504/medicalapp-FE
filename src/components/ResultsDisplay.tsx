@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScatterPlotChart } from "./ScatterPlotChart";
 import { TrajectoryChart } from "./TrajectoryChart";
 import { CentileChart } from "./CentileChart";
-import { ExplainableAI } from "./ExplainableAI";
+// import { ExplainableAI } from "./ExplainableAI"; // unused
 
 // import { RiskFactorsPanel } from "./RiskFactorsPanel";
 // import { DiagnosticZonesChart } from "./DiagnosticZonesChart";
